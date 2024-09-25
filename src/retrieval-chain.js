@@ -44,8 +44,8 @@ async function main() {
 
   const docs = await loader.load();
   const splitter = RecursiveCharacterTextSplitter.fromLanguage("js", {
-    chunkSize: 250,
-    chunkOverlap: 50,
+    chunkSize: 600,
+    chunkOverlap: 100,
   });
     
   const splitDocs = await splitter.splitDocuments(docs);
@@ -166,10 +166,11 @@ async function main() {
 
   const originalQuestion = "Can you find bugs for function getDefaultItemIcon?";
 
+  const sessionId = `test_${Date.now()}`;
   const originalAnswer = await finalRetrievalChain.invoke({
     question: originalQuestion,
   }, {
-    configurable: { sessionId: "test" }
+    configurable: { sessionId }
   });
 
   console.log('-----------Original Answer:-----------');
@@ -178,7 +179,7 @@ async function main() {
   const finalResult = await finalRetrievalChain.invoke({
     question: "Can you generate unit test for it to cover the bug?",
   }, {
-    configurable: { sessionId: "test" }
+    configurable: { sessionId }
   });
   console.log('-----------Final Answer:-----------');
   console.log(finalResult);
