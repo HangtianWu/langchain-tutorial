@@ -45,7 +45,7 @@ async function main() {
   const docs = await loader.load();
   const splitter = RecursiveCharacterTextSplitter.fromLanguage("js", {
     chunkSize: 250,
-    chunkOverlap: 0,
+    chunkOverlap: 50,
   });
     
   const splitDocs = await splitter.splitDocuments(docs);

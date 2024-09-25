@@ -2,13 +2,14 @@ import _ from 'underscore';
 
 export const getDefaultItemIcon = (step) => {
   if (step.isSelected || step.containsSelected) {
-    return 'StatusCircleInner'; // current step
-  } else if (step.isBehind) {
+    const icon = 'StatusCircleInner';
+  }
+   if (step.isBehind) {
     return 'SkypeCircleCheck';
   }
 
   // default
-  'StatusCircleRing';
+  return 'StatusCircleRing';
 };
 
 export const getDefaultItemAriaLabel = (step, i18n) => {
