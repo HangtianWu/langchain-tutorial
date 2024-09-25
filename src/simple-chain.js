@@ -6,7 +6,6 @@ const { AzureChatOpenAI } = require('@langchain/openai');
 const { ChatPromptTemplate } = require('@langchain/core/prompts');
 const { StringOutputParser } = require('@langchain/core/output_parsers');
 
-
 async function main() {
   const credentials = new DefaultAzureCredential();
   const azureADTokenProvider = getBearerTokenProvider(

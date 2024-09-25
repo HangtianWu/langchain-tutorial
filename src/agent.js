@@ -1,13 +1,15 @@
+const fs = require('fs');
+const { z } = require('zod');
 const {
   DefaultAzureCredential,
   getBearerTokenProvider,
 } = require('@azure/identity');
 const { AzureChatOpenAI } = require('@langchain/openai');
-const { ChatPromptTemplate } = require('@langchain/core/prompts');
+const { HumanMessage } = require('@langchain/core/messages');
 const { WikipediaQueryRun } = require('@langchain/community/tools/wikipedia_query_run');
-const { createToolCallingAgent, AgentExecutor  } = require('langchain/agents');
+const { MemorySaver } = require('@langchain/langgraph');
+const { createReactAgent } = require('@langchain/langgraph/prebuilt');
 const { tool } = require('@langchain/core/tools');
-const { z } = require('zod');
 
 async function main() {
   const credentials = new DefaultAzureCredential();
@@ -22,7 +24,7 @@ async function main() {
     azureOpenAIApiDeploymentName: "gpt-4",
     azureOpenAIApiVersion: "2024-08-01-preview",
     temperature: 0,
-    verbose: true,
+    // verbose: true,
   });
 
   const calculatorSchema = z.object({
@@ -62,27 +64,39 @@ async function main() {
 
   const tools = [wikiTool, calculatorTool];
 
-  const prompt = ChatPromptTemplate.fromMessages([
-    ["system", "You are a helpful assistant"],
-    ["placeholder", "{chat_history}"],
-    ["human", "{input}"],
-    ["placeholder", "{agent_scratchpad}"],
-  ]);
-
-  const agent = await createToolCallingAgent({ llm, tools, prompt });
-
-  const agentExecutor = new AgentExecutor({
-    agent,
+  // Initialize memory to persist state between graph runs
+  const agentCheckpointer = new MemorySaver();
+  const agent = createReactAgent({
+    llm,
     tools,
+    checkpointSaver: agentCheckpointer,
   });
 
-  // const result1 = await agentExecutor.invoke({ input: "What is 78 * 98?" });
-  // console.log('-----------Result 1:-----------');
-  // console.log(result1);
+  const graph = agent.getGraph();
+  const image = await graph.drawMermaidPng();
+  const arrayBuffer = await image.arrayBuffer();
+  // save graph to local
+  fs.writeFileSync('graph.png', new Uint8Array(arrayBuffer));
 
-  const result2 = await agentExecutor.invoke({ input: "What is deep learning? Also introduce me the authors of Book <Deep Learning>" });
-  console.log('-----------Result 2:-----------');
-  console.log(result2);
+  const agentState = await agent.invoke(
+    { messages: [new HumanMessage('Introduce me the story of book <Pride and Prejudice> and introduce me the author of the book.')] },
+    { configurable: { thread_id: "42" } },
+  );
+
+  console.log('-----------First Answer:-----------');
+  console.log(
+    agentState.messages[agentState.messages.length - 1].content,
+  );
+
+  const agentNextState = await agent.invoke(
+    { messages: [new HumanMessage('In which year was the author born? Please calculate how many years have passed since this year. It is 2024 this year')] },
+    { configurable: { thread_id: "42" } },
+  );
+
+  console.log('-----------Next Answer:-----------');
+  console.log(
+    agentNextState.messages[agentNextState.messages.length - 1].content,
+  );
 }
 
 main();
